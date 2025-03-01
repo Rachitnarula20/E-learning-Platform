@@ -8,30 +8,54 @@ export const CourseContextProvider = ({ children }) => {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [course, setCourse] = useState([])
 
-    async function fetchCourses() {
+    const fetchCourses = async () => {
         try {
             setLoading(true);
-            setError(null); // Reset error before fetching
+            setError(null);
             const { data } = await axios.get(`${server}/api/course/all`);
-            setCourses(data.courses || []); // Ensure it's an array
+            console.log("Fetched Courses Data:", data.courses);
+            setCourses(data.courses || []);
         } catch (error) {
-            console.error("Error fetching courses:", error);
+            console.error("Failed to fetch courses:", error);
             setError("Failed to fetch courses. Please try again.");
         } finally {
             setLoading(false);
         }
+    };
+
+    async function fetchCourse(id) {
+        try {
+            const { data } = await axios.get(`${server}/api/course/${id}`);
+           setCourse(data.course);
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     useEffect(() => {
-        if (courses.length === 0) fetchCourses(); // ✅ Fetch only if courses are empty
-    }, []); 
+        async function fetchData() {
+            try {
+                setLoading(true);
+                await fetchCourses();
+            } catch (error) {
+                console.error("Error fetching courses:", error);
+            } finally {
+                setLoading(false);
+                console.log("Updated Courses State:", courses); // ✅ Debugging
+            }
+        }
+        fetchData();
+    }, []);
 
+    // ✅ RETURN THE CONTEXT PROVIDER
     return (
-        <CourseContext.Provider value={{ courses, fetchCourses, loading, error }}>
+        <CourseContext.Provider value={{ courses, loading, error, fetchCourses, fetchCourse, course }}>
             {children}
         </CourseContext.Provider>
     );
 };
 
+// ✅ Export CourseData to access context in other components
 export const CourseData = () => useContext(CourseContext);

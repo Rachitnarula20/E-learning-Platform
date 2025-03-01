@@ -110,29 +110,31 @@ export const getMyCourse = TryCatch(async (req, res) => {
 });
 
 
-export const checkout = TryCatch(async (req,res) => {
-    const user = await User.findById(req.user._id)
+export const checkout = TryCatch(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    const course = await Courses.findById(req.params.id);
 
-    const course = await Courses.findById(req.params.id)
-
-    if(user.subscription.includes(course._id)){
-        return res.status(400).json({
-            message:"You already have this course"
-        })
+    // 🚨 Prevent admin from purchasing courses
+    if (user.role === "admin") {
+        return res.status(403).json({ message: "Admins cannot purchase courses" });
     }
 
+    // ✅ Check if user already owns the course
+    if (user.subscription.includes(course._id)) {
+        return res.status(400).json({ message: "You already have this course" });
+    }
+
+    // ✅ Create Razorpay order
     const options = {
-        amount: Number(course.price *100),
-        currency :"INR",
-    }
+        amount: Number(course.price * 100),
+        currency: "INR",
+    };
 
     const order = await instance.orders.create(options);
 
-    res.status(201).json({
-        order,
-        course,
-    });
+    res.status(201).json({ order, course });
 });
+
 
 export const paymentVerification = TryCatch(async (req,res) => {
     const {razorpay_order_id, razorpay_payment_id, razorpay_signature} = req.body
