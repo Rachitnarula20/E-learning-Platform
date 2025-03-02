@@ -37,8 +37,7 @@ const Account = () => {
         </div>
 
         {/* Dashboard Button */}
-        <Link
-          to="/dashboard"
+        <Link to={`/${user._id}/dashboard`}
           className="flex items-center justify-center bg-blue-600 text-white px-5 py-2 rounded-md font-medium hover:bg-blue-700 transition w-full mb-3"
         >
           <LayoutDashboard className="w-5 h-5 mr-2" />

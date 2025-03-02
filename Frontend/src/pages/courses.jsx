@@ -164,14 +164,14 @@ const CourseCard = ({ course, isAuth, user, fetchCourses }) => {
           </p>
         </div>
 
-        {/* Study / Get Started Button Logic */}
+        {/* ✅ Study / Get Started Button Logic */}
         {isAuth ? (
           <>
             {user && user.role !== "admin" ? (
               <>
                 {user.subscription.includes(course._id) ? (
                   <button
-                    onClick={() => navigate(`/courses/${course._id}`)}
+                    onClick={() => navigate(`/course/study/${course._id}`)}
                     className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
                   >
                     Study
@@ -195,12 +195,15 @@ const CourseCard = ({ course, isAuth, user, fetchCourses }) => {
             )}
           </>
         ) : (
-          <button onClick={() => navigate("/login")} className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md">
+          <button
+            onClick={() => navigate("/login")}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
+          >
             Get Started
           </button>
         )}
 
-        {/* Admin Delete Course Button */}
+        {/* ✅ Admin Delete Course Button */}
         {isAuth && user.role === "admin" && (
           <button
             onClick={deleteCourse}
@@ -213,3 +216,4 @@ const CourseCard = ({ course, isAuth, user, fetchCourses }) => {
     </div>
   );
 };
+

@@ -9,7 +9,7 @@ import axios from "axios";
 
 const CourseDescription = () => {
   const { id } = useParams();
-  const { fetchCourse, course, fetchCourses } = CourseData();
+  const { fetchCourse, course, fetchCourses, fetchMyCourse } = CourseData();
   const navigate = useNavigate();
   const { fetchUser } = UserData();
   const [loading, setLoading] = useState(false);
@@ -60,6 +60,7 @@ const CourseDescription = () => {
 
             await fetchUser();
             await fetchCourses();
+            await fetchMyCourse();
             toast.success(data.message);
             navigate(`/payment-success/${razorpay_payment_id}`);
           } catch (error) {

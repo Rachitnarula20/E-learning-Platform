@@ -11,6 +11,9 @@ import Account from "../pages/Account";
 import { UserData } from "../context/UserContext";
 import CourseDescription from "../pages/CourseDescription";
 import PaymentSuccess from "../pages/PaymentSuccess";
+import Dashboard from "../pages/Dasboard";
+import CourseStudy from "../pages/CourseStudy";
+import Lecture from "../pages/Lecture";
 
 const AppRoutes = () => {
   const { isAuth, user } = UserData(); // ✅ Use inside function
@@ -28,7 +31,11 @@ const AppRoutes = () => {
       {/* Protected Routes */}
       <Route path="/account" element={isAuth ? <Account /> : <Navigate to="/login" />} />
       <Route path="/courses/:id" element={isAuth ? <CourseDescription /> : <Navigate to="/login" />} />
-      <Route path="/payment-success/:paymentId" element={<PaymentSuccess />} />
+      <Route path="/payment-success/:paymentId" element={isAuth ? <PaymentSuccess /> : <Navigate to="/login" /> } />
+      <Route path="/:id/dashboard" element={isAuth ? <Dashboard /> : <Navigate to="/login" />} />
+      <Route path="/course/study/:id" element={isAuth ? <CourseStudy /> : <Navigate to="/login" />} />
+      <Route path="/course/lectures/:id" element={isAuth ? <Lecture /> : <Navigate to="/login" />} />
+
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
