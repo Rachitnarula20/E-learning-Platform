@@ -8,46 +8,41 @@ import toast from "react-hot-toast";
 
 const CoursesPage = () => {
   const { courses, fetchCourses } = CourseData();
-  const { isAuth, user } = UserData(); // ✅ Moved inside function
+  const { isAuth, user } = UserData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [sortOption, setSortOption] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-        try {
-            setLoading(true);
-            await fetchCourses();
-        } catch (error) {
-            console.error("Error fetching courses:", error);
-        } finally {
-            setLoading(false);
-        }
-    }
-    fetchData();
-}, []);
+    const loadCourses = async () => {
+      try {
+        setLoading(true);
+        await fetchCourses();
+      } catch (error) {
+        toast.error("Failed to load courses");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCourses();
+  }, []);
 
   // Filtering logic
-  let filteredCourses = courses.filter((course) => {
-    const matchesSearch = course.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "" || course.category === selectedCategory;
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "" || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   // Sorting logic
-  if (sortOption === "price-asc") {
-    filteredCourses.sort((a, b) => a.price - b.price);
-  } else if (sortOption === "price-desc") {
-    filteredCourses.sort((a, b) => b.price - a.price);
-  } else if (sortOption === "duration-asc") {
-    filteredCourses.sort((a, b) => parseInt(a.duration) - parseInt(b.duration));
-  } else if (sortOption === "duration-desc") {
-    filteredCourses.sort((a, b) => parseInt(b.duration) - parseInt(a.duration));
-  }
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    if (sortOption === "price-asc") return a.price - b.price;
+    if (sortOption === "price-desc") return b.price - a.price;
+    if (sortOption === "duration-asc") return a.duration - b.duration;
+    if (sortOption === "duration-desc") return b.duration - a.duration;
+    return 0;
+  });
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
@@ -71,13 +66,11 @@ const CoursesPage = () => {
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="">All Categories</option>
-          {Array.from(new Set(courses.map((course) => course.category))).map(
-            (category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
-            )
-          )}
+          {[...new Set(courses.map(course => course.category))].map((category, index) => (
+            <option key={index} value={category}>
+              {category}
+            </option>
+          ))}
         </select>
 
         <select
@@ -86,134 +79,132 @@ const CoursesPage = () => {
           onChange={(e) => setSortOption(e.target.value)}
         >
           <option value="">Sort By</option>
-          <option value="price-asc">Price (Low to High)</option>
-          <option value="price-desc">Price (High to Low)</option>
-          <option value="duration-asc">Duration (Short to Long)</option>
-          <option value="duration-desc">Duration (Long to Short)</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="duration-asc">Duration: Short to Long</option>
+          <option value="duration-desc">Duration: Long to Short</option>
         </select>
       </div>
 
-      {/* All Courses */}
-      <section>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">All Courses</h2>
-        {filteredCourses.length === 0 ? (
-          <p className="text-center text-gray-600">No courses found.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredCourses.map((course) => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                isAuth={isAuth}
-                user={user}
-                fetchCourses={fetchCourses}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Course Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : sortedCourses.length === 0 ? (
+        <div className="text-center text-gray-600 py-8">
+          No courses found matching your criteria
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {sortedCourses.map((course) => (
+            <CourseCard
+              key={course._id}
+              course={course}
+              isAuth={isAuth}
+              user={user}
+              fetchCourses={fetchCourses}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CourseCard = ({ course, isAuth, user, fetchCourses }) => {
+  const navigate = useNavigate();
+
+  const deleteCourse = async () => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    try {
+      await axios.delete(`${server}/api/courses/${course._id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      toast.success("Course deleted successfully");
+      fetchCourses();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete course");
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 relative">
+      {course.isNew && (
+        <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          New
+        </span>
+      )}
+
+      <div className="w-full h-48 overflow-hidden rounded-md mb-4">
+        <img
+          src={`${server}/${course.image}`}
+          alt={course.title}
+          className="w-full h-full object-cover hover:scale-105 transition-transform"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-lg font-bold text-gray-800 truncate">{course.title}</h3>
+        <span className="inline-block bg-blue-100 text-blue-600 text-sm px-2 py-1 rounded-full">
+          {course.category}
+        </span>
+
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-xl font-semibold text-gray-900">
+            ₹{course.price || "Free"}
+          </p>
+          <p className="text-sm text-gray-500 flex items-center">
+            <span className="mr-1">⏳</span>
+            {course.duration} hrs
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-4 space-y-2">
+          {isAuth ? (
+            user?.role === "admin" ? (
+              <>
+                <button
+                  onClick={() => navigate(`/course/lectures/${course._id}`)}
+                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Manage Lectures
+                </button>
+                <button
+                  onClick={deleteCourse}
+                  className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete Course
+                </button>
+              </>
+            ) : user?.subscription?.includes(course._id) ? (
+              <button
+                onClick={() => navigate(`/course/study/${course._id}`)}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Continue Learning
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(`/courses/${course._id}`)}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enroll Now
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Login to Enroll
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
 export default CoursesPage;
-
-const CourseCard = ({ course, isAuth, user, fetchCourses }) => {
-  const navigate = useNavigate();
-
-  // Function to delete course (only for admin)
-  const deleteCourse = async () => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
-    try {
-      await axios.delete(`${server}/api/courses/${course._id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      toast.success("Course deleted successfully");
-      fetchCourses(); // Refresh course list
-    } catch (error) {
-      toast.error("Failed to delete course");
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-md shadow hover:shadow-lg transition-shadow p-4 relative">
-      {course.isNew && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold py-1 px-2 rounded">
-          New
-        </div>
-      )}
-
-      <div className="w-full h-40 overflow-hidden rounded-md mb-4 relative">
-        <img
-          src={`http://localhost:5000/${course.image}`}
-          alt={course.title}
-          className="w-full h-full object-cover transform hover:scale-105 transition-transform"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <h3 className="text-lg font-bold text-gray-800">{course.title}</h3>
-        <span className="inline-block bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
-          {course.category}
-        </span>
-
-        {/* Price & Duration */}
-        <div className="mt-2 flex items-center justify-between">
-          <p className="text-xl font-semibold text-gray-900">₹{course.price}</p>
-          <p className="text-sm text-gray-500 flex items-center">
-            <span className="mr-1">⏳</span> {course.duration} hours
-          </p>
-        </div>
-
-        {/* ✅ Study / Get Started Button Logic */}
-        {isAuth ? (
-          <>
-            {user && user.role !== "admin" ? (
-              <>
-                {user.subscription.includes(course._id) ? (
-                  <button
-                    onClick={() => navigate(`/course/study/${course._id}`)}
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
-                  >
-                    Study
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/courses/${course._id}`)}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
-                  >
-                    Get Started
-                  </button>
-                )}
-              </>
-            ) : (
-              <button
-                onClick={() => navigate(`/courses/${course._id}`)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
-              >
-                Study
-              </button>
-            )}
-          </>
-        ) : (
-          <button
-            onClick={() => navigate("/login")}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 font-semibold shadow-md"
-          >
-            Get Started
-          </button>
-        )}
-
-        {/* ✅ Admin Delete Course Button */}
-        {isAuth && user.role === "admin" && (
-          <button
-            onClick={deleteCourse}
-            className="mt-2 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors block text-center"
-          >
-            Delete Course
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
-

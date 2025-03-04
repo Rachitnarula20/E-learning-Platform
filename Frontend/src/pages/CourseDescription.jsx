@@ -5,13 +5,13 @@ import { format } from "date-fns";
 import { server } from "../main";
 import toast from "react-hot-toast";
 import { UserData } from "../context/UserContext";
-import axios from "axios"; 
+import axios from "axios";
 
 const CourseDescription = () => {
   const { id } = useParams();
-  const { fetchCourse, course, fetchCourses, fetchMyCourse } = CourseData();
+  const { fetchCourse, course } = CourseData();
   const navigate = useNavigate();
-  const { fetchUser } = UserData();
+  const { user } = UserData();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,11 +21,16 @@ const CourseDescription = () => {
   }, [id]);
 
   const checkoutHandler = async () => {
-    const token = localStorage.getItem("token"); // ✅ Ensure token is retrieved
+    if (user?.role === "admin") {
+      toast.error("Admins cannot enroll in courses");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
     if (!token) {
-        toast.error("Authentication required! Please log in again.");
-        navigate("/login");
-        return;
+      toast.error("Please login to enroll");
+      navigate("/login");
+      return;
     }
 
     setLoading(true);
@@ -34,39 +39,27 @@ const CourseDescription = () => {
       const { data } = await axios.post(
         `${server}/api/course/checkout/${id}`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` }, // ✅ Fix header format
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const options = {
-        key: "rzp_test_XOrfnQQfYTZFkf",
+        key: process.env.RAZORPAY_KEY,
         amount: data.order.amount,
         currency: "INR",
         name: "E-Learning",
-        description: "Learning via E-Learning",
+        description: "Course Enrollment",
         image: "/logo.png",
         order_id: data.order.id,
         handler: async (response) => {
-          const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-            response;
-
           try {
-            const { data } = await axios.post(
+            await axios.post(
               `${server}/api/course/verification/${id}`,
-              { razorpay_order_id, razorpay_payment_id, razorpay_signature },
-              { headers: { Authorization: `Bearer ${token}` } } // ✅ Fix header
+              response,
+              { headers: { Authorization: `Bearer ${token}` } }
             );
-
-            await fetchUser();
-            await fetchCourses();
-            await fetchMyCourse();
-            toast.success(data.message);
-            navigate(`/payment-success/${razorpay_payment_id}`);
+            navigate(`/payment-success/${response.razorpay_payment_id}`);
           } catch (error) {
-            toast.error(error.response?.data?.message || "Payment failed");
-          } finally {
-            setLoading(false);
+            toast.error(error.response?.data?.message || "Payment verification failed");
           }
         },
         theme: { color: "#3399cc" },
@@ -75,15 +68,13 @@ const CourseDescription = () => {
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Checkout failed");
+      toast.error(error.response?.data?.message || "Enrollment failed");
+    } finally {
       setLoading(false);
     }
-};
+  };
 
-
-
-  if (loading) return <div className="text-center py-6">Loading course details...</div>;
-  if (!course) return <div className="text-center py-6">Course not found.</div>;
+  if (!course) return <div className="text-center py-6">Loading course...</div>;
 
   const {
     title,
@@ -96,69 +87,77 @@ const CourseDescription = () => {
     createdAt,
   } = course;
 
-  const backendURL = "http://localhost:5000";
-  const courseImage = image ? `${backendURL}/${image.replace(/\\/g, "/")}` : "fallback.jpg";
-  const formattedDate = createdAt ? format(new Date(createdAt), "MMMM dd, yyyy") : "Unknown date";
+  const courseImage = image ? `${server}/${image}` : "/default-course.jpg";
+  const formattedDate = format(new Date(createdAt), "MMMM dd, yyyy");
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="mb-6 text-center">
-          <h1 className="text-4xl font-bold text-gray-900">{title}</h1>
-          <span className="inline-block mt-2 bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full">
-            {category || "Uncategorized"}
-          </span>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <img
-              src={courseImage}
-              alt={title}
-              className="w-full h-auto object-cover rounded shadow-md"
-            />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Course Header */}
+          <div className="p-8 border-b">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+                <p className="mt-2 text-gray-500">
+                  Created by: <span className="text-gray-700">{createdBy?.name || "Admin"}</span>
+                </p>
+              </div>
+              <span className="mt-4 md:mt-0 px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm">
+                {category}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col justify-between">
-            <section className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-700">About this Course</h2>
-              <p className="text-gray-600 leading-relaxed">{description || "No description available."}</p>
-            </section>
+          {/* Main Content */}
+          <div className="grid md:grid-cols-2 gap-8 p-8">
+            {/* Course Image */}
+            <div className="relative aspect-video rounded-lg overflow-hidden">
+              <img
+                src={courseImage}
+                alt={title}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-              <div className="mb-2 sm:mb-0">
-                <span className="text-gray-500">Duration:</span>{" "}
-                <span className="text-gray-800 font-medium">{duration || "N/A"} hours</span>
+            {/* Course Details */}
+            <div className="space-y-6">
+              <div className="prose max-w-none">
+                <h2 className="text-xl font-semibold mb-4">Course Description</h2>
+                <p className="text-gray-600 leading-relaxed">
+                  {description || "No description available."}
+                </p>
               </div>
-              <div>
-                <span className="text-xl font-bold text-green-600">
-                  {price ? `₹${price}` : "Free"}
-                </span>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="text-lg font-medium">{duration} hours</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Price</p>
+                  <p className="text-lg font-medium text-green-600">
+                    {price ? `₹${price}` : "Free"}
+                  </p>
+                </div>
               </div>
-            </section>
 
-            <section className="mb-4">
-              <p className="text-sm text-gray-500">
-                Created by: <span className="font-medium text-gray-700">{createdBy || "Anonymous"}</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                Published on: <span className="font-medium text-gray-700">{formattedDate}</span>
-              </p>
-            </section>
-
-            <div className="flex space-x-4 mt-6">
-              <button
-                onClick={checkoutHandler}
-                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition duration-200"
-              >
-                Enroll Now
-              </button>
-              <button
-                onClick={() => navigate("/courses")}
-                className="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded hover:bg-gray-400 transition duration-200"
-              >
-                Go Back
-              </button>
+              {/* Enrollment Section */}
+              <div className="space-y-4">
+                <button
+                  onClick={checkoutHandler}
+                  disabled={loading}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+                >
+                  {loading ? "Processing..." : "Enroll Now"}
+                </button>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="w-full py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Back to Courses
+                </button>
+              </div>
             </div>
           </div>
         </div>

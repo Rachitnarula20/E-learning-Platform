@@ -4,7 +4,7 @@ import path from "path";
 
 const storage = multer.diskStorage({
     destination(req, file, cb) {
-        cb(null, "uploads");  // ✅ Ensure "uploads" folder exists
+        cb(null, "uploads"); // Ensure this folder exists
     },
     filename(req, file, cb) {
         const id = uuid();
@@ -14,5 +14,7 @@ const storage = multer.diskStorage({
     }
 });
 
-// ✅ Ensure the correct field name is used in the request (image)
-export const uploadFiles = multer({ storage }).single("image");
+export const uploadFiles = multer({ storage }).fields([
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 }
+]);
