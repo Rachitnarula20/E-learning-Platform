@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../main';
 import { UserData } from '../context/UserContext';
+import toast from 'react-hot-toast';
 
 const Lecture = () => {
   const { user } = UserData();
@@ -12,7 +13,11 @@ const Lecture = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newLecture, setNewLecture] = useState({ title: '', video: null });
+  const [newLecture, setNewLecture] = useState({ 
+    title: '', 
+    description: '', // Add this initial value
+    video: null 
+  });
   
   const token = localStorage.getItem('token');
 
@@ -32,6 +37,7 @@ const Lecture = () => {
       }
     } catch (err) {
       setError('Failed to load lectures');
+      toast.error('Failed to load lectures');
     } finally {
       setLoading(false);
     }
@@ -44,34 +50,45 @@ const Lecture = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCurrentLecture(data.lecture);
-      setError('');
     } catch (err) {
       setError('Failed to load lecture details');
+      toast.error('Failed to load lecture details');
     }
   };
 
   const handleDelete = async (lectureId) => {
     if (!window.confirm('Are you sure you want to delete this lecture?')) return;
     try {
-      await axios.delete(`${server}/api/course/lecture/${lectureId}`, {
+      await axios.delete(`${server}/api/admin/lecture/${lectureId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLectures(prev => prev.filter(l => l._id !== lectureId));
       if (currentLecture?._id === lectureId) setCurrentLecture(null);
+      toast.success('Lecture deleted successfully');
     } catch (err) {
-      setError('Failed to delete lecture');
+      console.error('Delete error:', err.response?.data);
+      setError(err.response?.data?.message || 'Failed to delete lecture');
+      toast.error(err.response?.data?.message || 'Failed to delete lecture');
     }
   };
 
   const handleAddLecture = async (e) => {
     e.preventDefault();
+  
+    // Validate required fields
+    if (!newLecture.title || !newLecture.description || !newLecture.video) {
+      toast.error('Please provide a title, description, and select a video file');
+      return;
+    }
+  
     const formData = new FormData();
     formData.append('title', newLecture.title);
+    formData.append('description', newLecture.description);
     formData.append('video', newLecture.video);
-
+  
     try {
-      await axios.post(
-        `${server}/api/course/lectures/${courseId}`,
+      const { data } = await axios.post(
+        `${server}/api/admin/course/${courseId}`,
         formData,
         {
           headers: { 
@@ -80,11 +97,15 @@ const Lecture = () => {
           }
         }
       );
+
       setShowAddForm(false);
-      setNewLecture({ title: '', video: null });
+    setNewLecture({ title: '', description: '', video: null });
       await fetchLectures();
+      setCurrentLecture(data.lecture);
+      toast.success('Lecture added successfully');
     } catch (err) {
-      setError('Failed to add lecture');
+      setError(err.response?.data?.message || 'Failed to add lecture');
+      toast.error('Failed to add lecture');
     }
   };
 
@@ -118,21 +139,29 @@ const Lecture = () => {
 
           {showAddForm && (
             <form onSubmit={handleAddLecture} className="mt-4 space-y-2">
-              <input
-                type="text"
-                placeholder="Lecture Title"
-                value={newLecture.title}
-                onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })}
-                className="w-full p-2 border rounded"
-                required
-              />
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setNewLecture({ ...newLecture, video: e.target.files[0] })}
-                className="w-full p-2 border rounded"
-                required
-              />
+            <input
+              type="text"
+              placeholder="Lecture Title"
+              value={newLecture.title}
+              onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })}
+              className="w-full p-2 border rounded"
+              required
+            />
+            {/* Add this textarea for description */}
+            <textarea
+              placeholder="Lecture Description"
+              value={newLecture.description}
+              onChange={(e) => setNewLecture({ ...newLecture, description: e.target.value })}
+              className="w-full p-2 border rounded"
+              required
+            />
+             <input
+      type="file"
+      accept="video/*"
+      onChange={(e) => setNewLecture({ ...newLecture, video: e.target.files[0] })}
+      className="w-full p-2 border rounded"
+      required
+    />
               <div className="flex gap-2">
                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                   Upload
