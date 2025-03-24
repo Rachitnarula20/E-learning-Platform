@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: elearning-platform
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URL
+        sync: false
+      - key: Activation_Secret
+        sync: false
+      - key: Gmail
+        sync: false
+      - key: Password
+        sync: false
+      - key: Razorpay_Key
+        sync: false
+      - key: Razorpay_Secret
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+envVarGroups:
+  - name: elearning-env
+    envVars:
+      - key: MONGODB_URL
+        sync: false
+      - key: Activation_Secret
+        sync: false
+      - key: Gmail
+        sync: false
+      - key: Password
+        sync: false
+      - key: Razorpay_Key
+        sync: false
+      - key: Razorpay_Secret
+        sync: false
+      - key: JWT_SECRET
+        sync: false

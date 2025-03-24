@@ -43,7 +43,7 @@ const CourseDescription = () => {
       );
 
       const options = {
-        key: process.env.RAZORPAY_KEY,
+        key: "rzp_test_XOrfnQQfYTZFkf", 
         amount: data.order.amount,
         currency: "INR",
         name: "E-Learning",
