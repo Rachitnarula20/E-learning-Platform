@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { server } from "../main";
+import { SERVER as server } from "../config";
 import { UserData } from "../context/UserContext";
 import toast from "react-hot-toast";
 

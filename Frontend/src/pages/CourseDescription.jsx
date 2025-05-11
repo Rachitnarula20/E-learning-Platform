@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CourseData } from "../context/CourseContext";
 import { format } from "date-fns";
-import { server } from "../main";
+import { SERVER as server } from "../config";
 import toast from "react-hot-toast";
 import { UserData } from "../context/UserContext";
 import axios from "axios";
