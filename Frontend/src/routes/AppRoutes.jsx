@@ -11,7 +11,7 @@ import Account from "../pages/Account.jsx";
 import { UserData } from "../context/UserContext.jsx";
 import CourseDescription from "../pages/CourseDescription.jsx";
 import PaymentSuccess from "../pages/PaymentSuccess.jsx";
-import Dashboard from "../pages/Dasboard.jsx";
+import Dashboard from "../pages/Dashboard.jsx";
 import CourseStudy from "../pages/CourseStudy.jsx";
 import Lecture from "../pages/Lecture.jsx";
 
