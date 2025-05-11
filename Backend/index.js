@@ -15,7 +15,9 @@ const app = express();
 
 // ✅ Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(
+    {origin: "https://e-learning-platform-roan.vercel.app", credentials: true}
+));
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ Static file serving
