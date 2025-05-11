@@ -1,19 +1,19 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import Home from "../pages/home";
-import AboutUs from "../pages/AboutUs";
-import Login from "../pages/Auth/Login";
-import Register from "../pages/Auth/Register";
-import Courses from "../pages/Courses";
-import Verify from "../pages/Auth/Verify";
-import NotFound from "../pages/NotFound"; // 404 Page
-import Account from "../pages/Account";
-import { UserData } from "../context/UserContext";
-import CourseDescription from "../pages/CourseDescription";
-import PaymentSuccess from "../pages/PaymentSuccess";
-import Dashboard from "../pages/Dasboard";
-import CourseStudy from "../pages/CourseStudy";
-import Lecture from "../pages/Lecture";
+import Home from "../pages/home.jsx";
+import AboutUs from "../pages/AboutUs.jsx";
+import Login from "../pages/Auth/Login.jsx";
+import Register from "../pages/Auth/Register.jsx";
+import Courses from "../pages/Courses.jsx";
+import Verify from "../pages/Auth/Verify.jsx";
+import NotFound from "../pages/NotFound.jsx"; // 404 Page
+import Account from "../pages/Account.jsx";
+import { UserData } from "../context/UserContext.jsx";
+import CourseDescription from "../pages/CourseDescription.jsx";
+import PaymentSuccess from "../pages/PaymentSuccess.jsx";
+import Dashboard from "../pages/Dasboard.jsx";
+import CourseStudy from "../pages/CourseStudy.jsx";
+import Lecture from "../pages/Lecture.jsx";
 
 const AppRoutes = () => {
   const { isAuth, user } = UserData(); // ✅ Use inside function
